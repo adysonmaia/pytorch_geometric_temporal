@@ -1,7 +1,10 @@
-from typing import List
 import json
-import urllib
+import ssl
+import urllib.request
+from typing import List
+
 import numpy as np
+
 from torch_geometric_temporal.signal import StaticGraphTemporalSignal
 
 
@@ -22,16 +25,20 @@ class MontevideoBusDatasetLoader(object):
 
     def _read_web_data(self):
         url = "https://raw.githubusercontent.com/benedekrozemberczki/pytorch_geometric_temporal/master/dataset/montevideo_bus.json"
-        self._dataset = json.loads(urllib.request.urlopen(url).read())
+        context = ssl._create_unverified_context()
+        self._dataset = json.loads(urllib.request.urlopen(url, context=context).read())
 
     def _get_node_ids(self):
-        return [node.get('bus_stop') for node in self._dataset["nodes"]]
+        return [node.get("bus_stop") for node in self._dataset["nodes"]]
 
     def _get_edges(self):
         node_ids = self._get_node_ids()
         node_id_map = dict(zip(node_ids, range(len(node_ids))))
         self._edges = np.array(
-            [(node_id_map[d["source"]], node_id_map[d["target"]]) for d in self._dataset["links"]]
+            [
+                (node_id_map[d["source"]], node_id_map[d["target"]])
+                for d in self._dataset["links"]
+            ]
         ).T
 
     def _get_edge_weights(self):
