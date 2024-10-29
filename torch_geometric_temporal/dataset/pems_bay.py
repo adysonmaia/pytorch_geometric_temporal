@@ -96,7 +96,7 @@ class PemsBayDatasetLoader(object):
         features, target = [], []
         for i, j in indices:
             features.append((self.X[:, :, i : i + num_timesteps_in]).numpy())
-            target.append((self.X[:, :, i + num_timesteps_in : j]).numpy())
+            target.append((self.X[:, 0, i + num_timesteps_in : j]).numpy())
 
         self.features = features
         self.targets = target
