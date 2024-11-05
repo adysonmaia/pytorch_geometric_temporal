@@ -1,7 +1,9 @@
 import math
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch_geometric.data import Batch, Data
 from torch_geometric.nn import ChebConv
 
 
@@ -134,7 +136,6 @@ class STConv(nn.Module):
         edge_index: torch.LongTensor,
         edge_weight: torch.FloatTensor = None,
     ) -> torch.FloatTensor:
-
         r"""Forward pass. If edge weights are not present the forward pass
         defaults to an unweighted graph.
 
@@ -147,10 +148,11 @@ class STConv(nn.Module):
             * **T** (PyTorch FloatTensor) - Sequence of node features.
         """
         T_0 = self._temporal_conv1(X)
-        T = torch.zeros_like(T_0).to(T_0.device)
-        for b in range(T_0.size(0)):
-            for t in range(T_0.size(1)):
-                T[b][t] = self._graph_conv(T_0[b][t], edge_index, edge_weight)
+
+        T = T_0.reshape(-1, T_0.shape[2], T_0.shape[3])
+        batch = Batch.from_data_list([Data(d, edge_index, edge_weight) for d in T])
+        T = self._graph_conv(batch.x, batch.edge_index, batch.edge_attr)
+        T = T.view(T_0.shape[0], T_0.shape[1], T_0.shape[2], -1)
 
         T = F.relu(T)
         T = self._temporal_conv2(T)
